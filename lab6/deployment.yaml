@@ -1,0 +1,50 @@
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: dummy-nad-conf
+spec:
+  config: '{
+    "cniVersion": "0.3.1",
+    "plugins": [
+      {
+        "type": "macvlan",
+        "mode": "bridge",
+        "master": "dummy-lab6",
+        "capabilities": { "ips": true },
+        "ipam": {
+          "type": "static",
+          "routes": [
+            {
+              "dst": "10.10.20.0/24"
+            }
+          ]
+        }
+      },
+      {
+        "type": "tuning",
+        "capabilities": { "mac": true }
+      }
+    ]
+  }'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab6-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lab6
+  template:
+    metadata:
+      labels:
+        app: lab6
+      annotations:
+        k8s.v1.cni.cncf.io/networks: '[ { "name": "dummy-nad-conf", "interface": "eth1", "ips": [ "10.10.30.100/24" ]} ]'
+    spec:
+      containers:
+      - name: demo-container
+        image: nginx:1.19
+        ports:
+        - containerPort: 80
